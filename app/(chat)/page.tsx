@@ -21,6 +21,12 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateText } from 'ai'
+
+const MODEL = 'llama3-70b-8192'
+const GROQ_API_KEY_ENV = process.env.GROQ_API_KEY
+
 
 type UserType = "individual" | "advisor" | "investor-relations"
 
@@ -71,6 +77,50 @@ function useGroq<T>(key: string, params?: any): { data: T | null; isLoading: boo
       try {
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 500))
+
+        const groq = createOpenAI({
+          baseURL: 'https://api.groq.com/openai/v1',
+          apiKey: GROQ_API_KEY_ENV
+        });
+        const model = groq('llama3-8b-8192');
+
+
+        const captionSystemMessage =
+        `\
+    You are a stock market conversation bot. You can provide the user information about stocks.
+    You will be provided with the following:
+    - Stock ticker: representing stock symbol
+    - investment goal: representing if user wants to invest in short-term, mid-term, or long-term.
+    
+    You will then have to list 10 relevant stock tickers that the user provided one would depend on in its supply chain, or as its dependent products.
+    For each of the relevant stocks you should provide the following in table format:
+    
+    - Ticker name
+    - Profitability in 2024 Q2
+    - Cash balance in 2024 Q2
+    - Current Market Sentiment being positive, negative, or netural
+    - Apprecaition percentage over last 3 months
+    - Industry sector
+    
+    You would then rank top 5 from above table according to the following criteria:
+    1. investment goal user provided and whether they have potential for significant gain in short term or long term
+    2. not more than 3 choice from the same industry sector
+    
+    You would provide this in the table format as above for the top five choices.
+    
+    
+    Example 1 :
+    
+    User: NVIDIA, short term
+        `
+
+    //   // try {
+        const { response } = await generateText({
+          model: model,
+          prompt: "captionSystemMessage",
+        });
+        console.log(response);
+
         let result: any
         switch (key) {
           case 'portfolio':
